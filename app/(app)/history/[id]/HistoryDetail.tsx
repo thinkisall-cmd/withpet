@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import NaverMap from '@/components/NaverMap'
+import KakaoMap from '@/components/KakaoMap'
 
 interface Props {
   walkSession: any
@@ -35,16 +35,17 @@ export default function HistoryDetail({ walkSession }: Props) {
     setShareUrl(null)
   }
 
-  function handleMapReady(map: naver.maps.Map) {
+  function handleMapReady(map: kakao.maps.Map) {
     const route: Array<{ lat: number; lng: number }> = walkSession.route ?? []
     if (route.length < 2) return
-    new naver.maps.Polyline({
+    new kakao.maps.Polyline({
       map,
-      path: route.map(p => new naver.maps.LatLng(p.lat, p.lng)),
+      path: route.map(p => new kakao.maps.LatLng(p.lat, p.lng)),
       strokeColor: '#6366f1',
       strokeWeight: 4,
+      strokeOpacity: 0.8,
     })
-    map.setCenter(new naver.maps.LatLng(route[0].lat, route[0].lng))
+    map.setCenter(new kakao.maps.LatLng(route[0].lat, route[0].lng))
   }
 
   const dogs = walkSession.walk_session_dogs?.map((wsd: any) => wsd.dogs).filter(Boolean) ?? []
@@ -60,7 +61,7 @@ export default function HistoryDetail({ walkSession }: Props) {
       </div>
 
       <div className="flex-1 min-h-64">
-        <NaverMap onMapReady={handleMapReady} className="h-64 w-full" />
+        <KakaoMap onMapReady={handleMapReady} className="h-64 w-full" />
       </div>
 
       <div className="p-4 flex flex-col gap-3">

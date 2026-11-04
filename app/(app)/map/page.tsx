@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import NaverMap from '@/components/NaverMap'
+import KakaoMap from '@/components/KakaoMap'
 import WalkControls from '@/components/WalkControls'
 import WalkerMarkers from '@/components/WalkerMarkers'
 import DogBottomSheet from '@/components/DogBottomSheet'
@@ -15,15 +15,15 @@ import type { LiveLocation } from '@/types'
 interface Point { lat: number; lng: number }
 
 export default function MapPage() {
-  const [map, setMap] = useState<naver.maps.Map | null>(null)
+  const [map, setMap] = useState<kakao.maps.Map | null>(null)
   const [myUserId, setMyUserId] = useState('')
   const [myPosition, setMyPosition] = useState<Point | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<LiveLocation | null>(null)
   const { session, startWalk, endWalk, elapsedSeconds } = useWalkSession()
   const [myRoute, setMyRoute] = useState<Point[]>([])
   const lastSentRef = useRef<Point | null>(null)
-  const polylineRef = useRef<naver.maps.Polyline | null>(null)
-  const myMarkerRef = useRef<naver.maps.Marker | null>(null)
+  const polylineRef = useRef<kakao.maps.Polyline | null>(null)
+  const myMarkerRef = useRef<kakao.maps.Marker | null>(null)
   const nearbyWalkers = useLiveLocations(myUserId, myPosition)
 
   useEffect(() => {
@@ -47,9 +47,9 @@ export default function MapPage() {
     setMyRoute(prev => [...prev, pos])
 
     if (map) {
-      const latLng = new naver.maps.LatLng(pos.lat, pos.lng)
+      const latLng = new kakao.maps.LatLng(pos.lat, pos.lng)
       if (!myMarkerRef.current) {
-        myMarkerRef.current = new naver.maps.Marker({ position: latLng, map, title: '나' })
+        myMarkerRef.current = new kakao.maps.Marker({ position: latLng, map, title: '나' })
       } else {
         myMarkerRef.current.setPosition(latLng)
       }
@@ -62,11 +62,12 @@ export default function MapPage() {
   useEffect(() => {
     if (!map || myRoute.length < 2) return
     polylineRef.current?.setMap(null)
-    polylineRef.current = new naver.maps.Polyline({
+    polylineRef.current = new kakao.maps.Polyline({
       map,
-      path: myRoute.map(p => new naver.maps.LatLng(p.lat, p.lng)),
+      path: myRoute.map(p => new kakao.maps.LatLng(p.lat, p.lng)),
       strokeColor: '#6366f1',
       strokeWeight: 4,
+      strokeOpacity: 0.8,
     })
   }, [myRoute, map])
 
@@ -83,7 +84,7 @@ export default function MapPage() {
 
   return (
     <div className="relative h-screen w-full">
-      <NaverMap onMapReady={setMap} className="h-full w-full" />
+      <KakaoMap onMapReady={setMap} className="h-full w-full" />
       <WalkerMarkers
         map={map}
         locations={nearbyWalkers}

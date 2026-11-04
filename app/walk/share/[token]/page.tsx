@@ -1,11 +1,10 @@
-import NaverMap from '@/components/NaverMap'
+import SharedWalkMap from './SharedWalkMap'
 
 interface Props {
   params: { token: string }
 }
 
 async function getSharedWalk(token: string) {
-  // 절대 URL — 서버 컴포넌트에서 relative fetch는 불가
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const res = await fetch(`${baseUrl}/api/walk/share/${token}`, { cache: 'no-store' })
   if (!res.ok) return null
@@ -27,18 +26,6 @@ export default async function SharedWalkPage({ params }: Props) {
   const started = new Date(session.started_at)
   const ended = session.ended_at ? new Date(session.ended_at) : null
   const minutes = ended ? Math.round((ended.getTime() - started.getTime()) / 60000) : 0
-  const route: Array<{ lat: number; lng: number }> = session.route ?? []
-
-  function handleMapReady(map: naver.maps.Map) {
-    if (route.length < 2) return
-    new naver.maps.Polyline({
-      map,
-      path: route.map(p => new naver.maps.LatLng(p.lat, p.lng)),
-      strokeColor: '#6366f1',
-      strokeWeight: 4,
-    })
-    map.setCenter(new naver.maps.LatLng(route[0].lat, route[0].lng))
-  }
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -49,7 +36,7 @@ export default async function SharedWalkPage({ params }: Props) {
       </div>
 
       <div className="h-64">
-        <NaverMap onMapReady={handleMapReady} className="h-64 w-full" />
+        <SharedWalkMap route={session.route ?? []} />
       </div>
     </main>
   )
