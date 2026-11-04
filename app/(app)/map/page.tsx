@@ -10,6 +10,7 @@ import { useWalkSession } from '@/hooks/useWalkSession'
 import { useBackgroundGeo } from '@/hooks/useBackgroundGeo'
 import { useLiveLocations } from '@/hooks/useLiveLocations'
 import { shouldSendLocation } from '@/lib/distance'
+import Link from 'next/link'
 import type { LiveLocation } from '@/types'
 
 interface Point { lat: number; lng: number }
@@ -17,6 +18,7 @@ interface Point { lat: number; lng: number }
 export default function MapPage() {
   const [map, setMap] = useState<kakao.maps.Map | null>(null)
   const [myUserId, setMyUserId] = useState('')
+  const [nickname, setNickname] = useState('')
   const [myPosition, setMyPosition] = useState<Point | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<LiveLocation | null>(null)
   const { session, startWalk, endWalk, elapsedSeconds } = useWalkSession()
@@ -27,25 +29,17 @@ export default function MapPage() {
   const nearbyWalkers = useLiveLocations(myUserId, myPosition)
 
   useEffect(() => {
-    createClient().auth.getSession().then(({ data: { session } }) => {
-      if (session) setMyUserId(session.user.id)
+    const supabase = createClient()
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return
+      setMyUserId(session.user.id)
+      const { data } = await supabase.from('users').select('nickname').eq('id', session.user.id).single()
+      if (data?.nickname) setNickname(data.nickname)
     })
   }, [])
 
   function handlePosition(pos: Point) {
-    if (!session) return
-    if (!shouldSendLocation(lastSentRef.current, pos)) return
-    lastSentRef.current = pos
     setMyPosition(pos)
-
-    fetch('/api/location', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lat: pos.lat, lng: pos.lng, session_id: session.id }),
-    })
-
-    setMyRoute(prev => [...prev, pos])
-
     if (map) {
       const latLng = new kakao.maps.LatLng(pos.lat, pos.lng)
       if (!myMarkerRef.current) {
@@ -55,9 +49,21 @@ export default function MapPage() {
       }
       map.setCenter(latLng)
     }
+
+    if (!session) return
+    if (!shouldSendLocation(lastSentRef.current, pos)) return
+    lastSentRef.current = pos
+
+    fetch('/api/location', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat: pos.lat, lng: pos.lng, session_id: session.id }),
+    })
+
+    setMyRoute(prev => [...prev, pos])
   }
 
-  useBackgroundGeo(handlePosition, !!session)
+  useBackgroundGeo(handlePosition, true)
 
   useEffect(() => {
     if (!map || myRoute.length < 2) return
@@ -85,6 +91,19 @@ export default function MapPage() {
   return (
     <div className="relative h-screen w-full">
       <KakaoMap onMapReady={setMap} className="h-full w-full" />
+      {/* 상단 바 */}
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 bg-white/80 backdrop-blur-sm shadow-sm">
+        <span className="font-semibold text-gray-800">{nickname || '...'}</span>
+        <div className="flex items-center gap-3">
+          <Link href="/history" className="text-sm text-blue-500 font-medium">산책 기록</Link>
+          <button
+            onClick={() => createClient().auth.signOut().then(() => window.location.href = '/login')}
+            className="text-sm text-gray-400"
+          >
+            로그아웃
+          </button>
+        </div>
+      </div>
       <WalkerMarkers
         map={map}
         locations={nearbyWalkers}

@@ -26,7 +26,7 @@ export default function WalkControls({ session, elapsedSeconds, onStart, onEnd }
 
   if (session) {
     return (
-      <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-2 px-6">
+      <div className="absolute bottom-6 left-0 right-0 z-10 flex flex-col items-center gap-2 px-6">
         <span className="bg-white rounded-full px-4 py-1 text-sm shadow">{formatTime(elapsedSeconds)}</span>
         <button
           onClick={onEnd}
@@ -40,7 +40,7 @@ export default function WalkControls({ session, elapsedSeconds, onStart, onEnd }
 
   return (
     <>
-      <div className="absolute bottom-6 left-0 right-0 px-6">
+      <div className="absolute bottom-6 left-0 right-0 z-10 px-6">
         <button
           onClick={() => setShowModal(true)}
           className="w-full max-w-sm mx-auto block rounded-xl bg-blue-500 py-4 text-white text-lg font-bold shadow-lg"

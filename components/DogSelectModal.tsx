@@ -16,7 +16,8 @@ export default function DogSelectModal({ onConfirm, onCancel }: Props) {
   useEffect(() => {
     fetch('/api/dogs')
       .then(r => r.json())
-      .then(data => { setDogs(data); setLoading(false) })
+      .then(data => { setDogs(Array.isArray(data) ? data : []); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [])
 
   function toggle(id: string) {

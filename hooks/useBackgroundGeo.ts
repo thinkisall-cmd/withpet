@@ -16,6 +16,9 @@ export function useBackgroundGeo(
 ) {
   const watchIdRef = useRef<number | null>(null)
   const watcherIdRef = useRef<string | null>(null)
+  // stale closure 방지: 항상 최신 콜백 참조
+  const onPositionRef = useRef(onPosition)
+  onPositionRef.current = onPosition
 
   useEffect(() => {
     if (!active) {
@@ -40,15 +43,17 @@ export function useBackgroundGeo(
         BgGeo.addWatcher(
           { backgroundMessage: '산책 중...', distanceFilter: 10 },
           (pos: any) => {
-            if (pos) onPosition({ lat: pos.latitude, lng: pos.longitude })
+            if (pos) onPositionRef.current({ lat: pos.latitude, lng: pos.longitude })
           }
         ).then((id: string) => { watcherIdRef.current = id })
       })
     } else {
       watchIdRef.current = navigator.geolocation.watchPosition(
-        pos => onPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {},
-        { enableHighAccuracy: true }
+        pos => onPositionRef.current({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        err => {
+          if (err.code === 1) alert('위치 권한이 거부됐습니다. 브라우저 주소창 옆 자물쇠 아이콘을 눌러 위치 권한을 허용해주세요.')
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
       )
     }
 

@@ -97,17 +97,6 @@ $$;
 ALTER PUBLICATION supabase_realtime ADD TABLE live_locations;
 
 -- =============================================
--- Ghost marker cleanup (pg_cron)
--- 1분마다 5분 미갱신 live_locations 삭제
--- =============================================
-
-SELECT cron.schedule(
-  'cleanup-stale-live-locations',
-  '* * * * *',
-  $$DELETE FROM live_locations WHERE updated_at < now() - interval '5 minutes';$$
-);
-
--- =============================================
 -- Storage bucket (SQL 방식)
 -- =============================================
 
