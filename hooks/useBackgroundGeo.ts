@@ -4,6 +4,12 @@ import { useEffect, useRef } from 'react'
 
 interface Position { lat: number; lng: number }
 
+// Capacitor 네이티브 플러그인 — TypeScript는 타입 불일치, any로 처리
+async function getBgGeo(): Promise<any> {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return (await import('@capacitor-community/background-geolocation' as any)) as any
+}
+
 export function useBackgroundGeo(
   onPosition: (pos: Position) => void,
   active: boolean
@@ -13,10 +19,9 @@ export function useBackgroundGeo(
 
   useEffect(() => {
     if (!active) {
-      // 감시 중단
       if (watcherIdRef.current) {
-        import('@capacitor-community/background-geolocation').then(({ BackgroundGeolocation }) => {
-          BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current! })
+        getBgGeo().then((mod: any) => {
+          ;(mod.default ?? mod).removeWatcher({ id: watcherIdRef.current! })
           watcherIdRef.current = null
         })
       }
@@ -30,13 +35,14 @@ export function useBackgroundGeo(
     const isNative = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()
 
     if (isNative) {
-      import('@capacitor-community/background-geolocation').then(({ BackgroundGeolocation }) => {
-        BackgroundGeolocation.addWatcher(
+      getBgGeo().then((mod: any) => {
+        const BgGeo = mod.default ?? mod
+        BgGeo.addWatcher(
           { backgroundMessage: '산책 중...', distanceFilter: 10 },
-          (pos, err) => {
+          (pos: any) => {
             if (pos) onPosition({ lat: pos.latitude, lng: pos.longitude })
           }
-        ).then(id => { watcherIdRef.current = id })
+        ).then((id: string) => { watcherIdRef.current = id })
       })
     } else {
       watchIdRef.current = navigator.geolocation.watchPosition(
@@ -48,8 +54,8 @@ export function useBackgroundGeo(
 
     return () => {
       if (watcherIdRef.current) {
-        import('@capacitor-community/background-geolocation').then(({ BackgroundGeolocation }) => {
-          BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current! })
+        getBgGeo().then((mod: any) => {
+          ;(mod.default ?? mod).removeWatcher({ id: watcherIdRef.current! })
         })
       }
       if (watchIdRef.current !== null) {
