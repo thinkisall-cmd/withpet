@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import DogForm from '@/components/DogForm'
 import type { Dog } from '@/types'
 
 export default function OnboardingPage() {
@@ -52,17 +53,10 @@ export default function OnboardingPage() {
     )
   }
 
-  // step === 'dog': DogForm은 Task 4에서 완성, 임시 skip 버튼
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
       <h1 className="text-2xl font-bold">강아지를 등록해주세요</h1>
-      <p className="text-gray-500">강아지 등록 폼은 Task 4에서 완성됩니다</p>
-      <button
-        onClick={() => router.push('/map')}
-        className="rounded-lg bg-gray-200 px-4 py-2"
-      >
-        나중에 하기
-      </button>
+      <DogForm onSaved={handleDogSaved} />
     </main>
   )
 }
