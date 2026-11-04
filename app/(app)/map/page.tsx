@@ -1,26 +1,42 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import NaverMap from '@/components/NaverMap'
 import WalkControls from '@/components/WalkControls'
+import WalkerMarkers from '@/components/WalkerMarkers'
+import DogBottomSheet from '@/components/DogBottomSheet'
 import { useWalkSession } from '@/hooks/useWalkSession'
 import { useBackgroundGeo } from '@/hooks/useBackgroundGeo'
+import { useLiveLocations } from '@/hooks/useLiveLocations'
 import { shouldSendLocation } from '@/lib/distance'
+import type { LiveLocation } from '@/types'
 
 interface Point { lat: number; lng: number }
 
 export default function MapPage() {
   const [map, setMap] = useState<naver.maps.Map | null>(null)
+  const [myUserId, setMyUserId] = useState('')
+  const [myPosition, setMyPosition] = useState<Point | null>(null)
+  const [selectedLocation, setSelectedLocation] = useState<LiveLocation | null>(null)
   const { session, startWalk, endWalk, elapsedSeconds } = useWalkSession()
   const [myRoute, setMyRoute] = useState<Point[]>([])
   const lastSentRef = useRef<Point | null>(null)
   const polylineRef = useRef<naver.maps.Polyline | null>(null)
   const myMarkerRef = useRef<naver.maps.Marker | null>(null)
+  const nearbyWalkers = useLiveLocations(myUserId, myPosition)
+
+  useEffect(() => {
+    createClient().auth.getSession().then(({ data: { session } }) => {
+      if (session) setMyUserId(session.user.id)
+    })
+  }, [])
 
   function handlePosition(pos: Point) {
     if (!session) return
     if (!shouldSendLocation(lastSentRef.current, pos)) return
     lastSentRef.current = pos
+    setMyPosition(pos)
 
     fetch('/api/location', {
       method: 'POST',
@@ -30,7 +46,6 @@ export default function MapPage() {
 
     setMyRoute(prev => [...prev, pos])
 
-    // 내 마커 이동
     if (map) {
       const latLng = new naver.maps.LatLng(pos.lat, pos.lng)
       if (!myMarkerRef.current) {
@@ -44,7 +59,6 @@ export default function MapPage() {
 
   useBackgroundGeo(handlePosition, !!session)
 
-  // 폴리라인 그리기
   useEffect(() => {
     if (!map || myRoute.length < 2) return
     polylineRef.current?.setMap(null)
@@ -64,11 +78,21 @@ export default function MapPage() {
     myMarkerRef.current = null
     setMyRoute([])
     lastSentRef.current = null
+    setMyPosition(null)
   }
 
   return (
     <div className="relative h-screen w-full">
       <NaverMap onMapReady={setMap} className="h-full w-full" />
+      <WalkerMarkers
+        map={map}
+        locations={nearbyWalkers}
+        onMarkerClick={setSelectedLocation}
+      />
+      <DogBottomSheet
+        location={selectedLocation}
+        onClose={() => setSelectedLocation(null)}
+      />
       <WalkControls
         session={session}
         elapsedSeconds={elapsedSeconds}
